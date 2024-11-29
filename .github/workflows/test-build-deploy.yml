@@ -1,0 +1,67 @@
+name: ci
+permissions: read-all
+on:
+  push:
+    branches: [master]
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+** # Tag filters not as strict due to different regex system on Github Actions
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-20.04
+    container:
+      image: quay.io/cortexproject/build-image:master-0ddced051
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup Git safe.directory
+        run: |
+          echo "this step is needed because when running in container, actions/checkout does not set safe.directory effectively."
+          echo "See https://github.com/actions/runner/issues/2033. We should use --system instead of --global"
+          git config --system --add safe.directory $GITHUB_WORKSPACE
+        # Commands in the Makefile are hardcoded with an assumed file structure of the CI container
+        # Symlink ensures paths specified in previous commands don’t break
+      - name: Sym Link Expected Path to Workspace
+        run: |
+          mkdir -p /go/src/github.com/cortexproject/weaveworks-common
+          ln -s $GITHUB_WORKSPACE/* /go/src/github.com/cortexproject/weaveworks-common
+      - name: Lint
+        run: make lint
+
+  protos:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Sym Link Expected Path to Workspace
+        run: |
+          sudo mkdir -p /go/src/github.com/cortexproject/weaveworks-common
+          sudo ln -s $GITHUB_WORKSPACE/* /go/src/github.com/cortexproject/weaveworks-common
+      - name: Install Docker Client
+        run: sudo ./.github/workflows/scripts/install-docker.sh
+      - name: Go mod Vendor
+        run: go mod vendor
+      - name: CheckProtos
+        run: make check-protos
+
+  test:
+    runs-on: ubuntu-20.04
+    container:
+      image: quay.io/cortexproject/build-image:master-0ddced051
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup Git safe.directory
+        run: |
+          echo "this step is needed because when running in container, actions/checkout does not set safe.directory effectively."
+          echo "See https://github.com/actions/runner/issues/2033. We should use --system instead of --global"
+          git config --system --add safe.directory $GITHUB_WORKSPACE
+        # Commands in the Makefile are hardcoded with an assumed file structure of the CI container
+        # Symlink ensures paths specified in previous commands don’t break
+      - name: Sym Link Expected Path to Workspace
+        run: |
+          mkdir -p /go/src/github.com/cortexproject/weaveworks-common
+          ln -s $GITHUB_WORKSPACE/* /go/src/github.com/cortexproject/weaveworks-common
+      - name: Test
+        run: make test

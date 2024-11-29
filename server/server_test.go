@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"strconv"
 	"testing"
 	"time"
 
@@ -37,7 +36,7 @@ func (f FakeServer) FailWithError(_ context.Context, _ *protobuf.Empty) (*protob
 }
 
 func (f FakeServer) FailWithHTTPError(_ context.Context, req *FailWithHTTPErrorRequest) (*protobuf.Empty, error) {
-	return nil, httpgrpc.Errorf(int(req.Code), strconv.Itoa(int(req.Code)))
+	return nil, httpgrpc.Errorf(int(req.Code), "%v", req.Code)
 }
 
 func (f FakeServer) Succeed(_ context.Context, _ *protobuf.Empty) (*protobuf.Empty, error) {
@@ -126,12 +125,12 @@ func TestDefaultAddresses(t *testing.T) {
 		w.WriteHeader(204)
 	})
 
-	go server.Run()
+	go server.Run() //nolint:errcheck
 	defer server.Shutdown()
 
-	conn, err := grpc.Dial("localhost:9095", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient("localhost:9095", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	empty := protobuf.Empty{}
 	client := NewFakeServerClient(conn)
@@ -168,11 +167,11 @@ func TestErrorInstrumentationMiddleware(t *testing.T) {
 		w.WriteHeader(http.StatusNotFound)
 	})
 
-	go server.Run()
+	go server.Run() //nolint:errcheck
 
-	conn, err := grpc.Dial("localhost:1234", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient("localhost:1234", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	empty := protobuf.Empty{}
 	client := NewFakeServerClient(conn)
@@ -307,7 +306,7 @@ func TestHTTPInstrumentationMetrics(t *testing.T) {
 		_ = cancelableSleep(r.Context(), time.Second*10)
 	})
 
-	go server.Run()
+	go server.Run() //nolint:errcheck
 
 	callThenCancel := func(f func(ctx context.Context) error) error {
 		ctx, cancel := context.WithCancel(context.Background())
@@ -502,7 +501,7 @@ func TestMiddlewareLogging(t *testing.T) {
 		w.WriteHeader(500)
 	})
 
-	go server.Run()
+	go server.Run() //nolint:errcheck
 	defer server.Shutdown()
 
 	req, err := http.NewRequest("GET", "http://127.0.0.1:9192/error500", nil)
@@ -544,13 +543,14 @@ func TestTLSServer(t *testing.T) {
 	require.NoError(t, err)
 
 	server.HTTP.HandleFunc("/testhttps", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello World!"))
+		_, err := w.Write([]byte("Hello World!"))
+		require.NoError(t, err)
 	})
 
 	fakeServer := FakeServer{}
 	RegisterFakeServerServer(server.GRPC, fakeServer)
 
-	go server.Run()
+	go server.Run() //nolint:errcheck
 	defer server.Shutdown()
 
 	clientCert, err := tls.LoadX509KeyPair("certs/client.crt", "certs/client.key")
@@ -574,7 +574,7 @@ func TestTLSServer(t *testing.T) {
 	client := &http.Client{Transport: tr}
 	res, err := client.Get("https://localhost:9193/testhttps")
 	require.NoError(t, err)
-	defer res.Body.Close()
+	defer res.Body.Close() //nolint:errcheck
 
 	require.Equal(t, res.StatusCode, http.StatusOK)
 
@@ -583,9 +583,9 @@ func TestTLSServer(t *testing.T) {
 	expected := []byte("Hello World!")
 	require.Equal(t, expected, body)
 
-	conn, err := grpc.Dial("localhost:9194", grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+	conn, err := grpc.NewClient("localhost:9194", grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	require.NoError(t, err)
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	empty := protobuf.Empty{}
 	grpcClient := NewFakeServerClient(conn)
@@ -645,7 +645,7 @@ func TestLogSourceIPs(t *testing.T) {
 		w.WriteHeader(500)
 	})
 
-	go server.Run()
+	go server.Run() //nolint:errcheck
 	defer server.Shutdown()
 
 	require.Empty(t, fake.sourceIPs)

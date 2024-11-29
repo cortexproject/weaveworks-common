@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 	"syscall"
@@ -19,7 +18,6 @@ type dir struct {
 	mockInode
 	name    string
 	entries map[string]Entry
-	stat    syscall.Stat_t
 }
 
 // File is a mock file
@@ -35,7 +33,7 @@ type File struct {
 
 // Entry is an entry in the mock filesystem
 type Entry interface {
-	os.FileInfo
+	os.DirEntry
 	fs.Interface
 	Add(path string, e Entry) error
 	Remove(path string) error
@@ -76,9 +74,9 @@ func (mockInode) Sys() interface{}   { return nil }
 func (p dir) Name() string { return p.name }
 func (p dir) IsDir() bool  { return true }
 
-func (p dir) ReadDir(path string) ([]os.FileInfo, error) {
+func (p dir) ReadDir(path string) ([]os.DirEntry, error) {
 	if path == "/" {
-		result := []os.FileInfo{}
+		result := []os.DirEntry{}
 		for _, v := range p.entries {
 			result = append(result, v)
 		}
@@ -92,6 +90,16 @@ func (p dir) ReadDir(path string) ([]os.FileInfo, error) {
 	}
 
 	return fs.ReadDir(tail)
+}
+
+func (p dir) Type() os.FileMode {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p dir) Info() (os.FileInfo, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (p dir) ReadDirNames(path string) ([]string, error) {
@@ -232,7 +240,7 @@ func (p File) ReadFile(path string) ([]byte, error) {
 		return nil, fmt.Errorf("I'm a file")
 	}
 	if p.FReader != nil {
-		return ioutil.ReadAll(p.FReader)
+		return io.ReadAll(p.FReader)
 	}
 	return []byte(p.FContents), nil
 }
@@ -266,7 +274,7 @@ func (p File) Open(path string) (io.ReadWriteCloser, error) {
 		io.Writer
 		io.Closer
 	}{
-		buf, buf, ioutil.NopCloser(nil),
+		buf, buf, io.NopCloser(nil),
 	}
 	if p.FReader != nil {
 		s.Reader = p.FReader

@@ -63,7 +63,10 @@ func main() {
 	t := template.Must(template.New("pacfile").Parse(pacfile))
 	http.HandleFunc("/proxy.pac", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/x-ns-proxy-autoconfig")
-		t.Execute(w, pacFileParameters{hostMatch, socksDestination, aliases})
+		err := t.Execute(w, pacFileParameters{hostMatch, socksDestination, aliases})
+		if err != nil {
+			panic(err)
+		}
 	})
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
