@@ -3,7 +3,7 @@ package server
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -102,9 +102,9 @@ func ParseURL(unparsed string) (string, error) {
 			return "", err
 		}
 		parts := strings.SplitN(host, ".", 3)
-		service, namespace, domain := parts[0], "default", ""
+		service, _, domain := parts[0], "default", ""
 		if len(parts) > 1 {
-			namespace = parts[1]
+			namespace := parts[1]
 			domain = "." + namespace
 		}
 		if len(parts) > 2 {
@@ -150,7 +150,7 @@ func NewClient(address string) (*Client, error) {
 
 // HTTPRequest wraps an ordinary HTTPRequest with a gRPC one
 func HTTPRequest(r *http.Request) (*httpgrpc.HTTPRequest, error) {
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +174,9 @@ func WriteResponse(w http.ResponseWriter, resp *httpgrpc.HTTPResponse) error {
 func WriteError(w http.ResponseWriter, err error) {
 	resp, ok := httpgrpc.HTTPResponseFromError(err)
 	if ok {
-		WriteResponse(w, resp)
+		if err := WriteResponse(w, resp); err != nil {
+			logging.Global().Errorf("Failed to write response: %v", err)
+		}
 	} else {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

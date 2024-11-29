@@ -8,16 +8,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/require"
+	"github.com/weaveworks/common/middleware/middleware_test"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
-
-	"github.com/weaveworks/common/middleware/middleware_test"
 )
 
 func TestGrpcStats(t *testing.T) {
@@ -167,7 +165,7 @@ func TestGrpcStatsStreaming(t *testing.T) {
 			Body: []byte(generateString((ix + 1) * 1024 * 1024)),
 		}
 
-		t.Log("Client Sending", proto.Size(msg))
+		t.Log("Client Sending", msg.XXX_Size())
 		err = s.Send(msg)
 		require.NoError(t, err)
 
@@ -247,7 +245,7 @@ func (f halfEcho) Process(server middleware_test.EchoServer_ProcessServer) error
 		// Half the body
 		msg.Body = msg.Body[:len(msg.Body)/2]
 
-		f.log("Server Sending", proto.Size(msg))
+		f.log("Server Sending", msg.XXX_Size())
 		err = server.Send(msg)
 		if err != nil {
 			return err

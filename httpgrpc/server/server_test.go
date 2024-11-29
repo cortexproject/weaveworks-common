@@ -9,7 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	jaegercfg "github.com/uber/jaeger-client-go/config"
@@ -39,7 +39,7 @@ func newTestServer(handler http.Handler) (*testServer, error) {
 	}
 
 	httpgrpc.RegisterHTTPServer(server.grpcServer, server.Server)
-	go server.grpcServer.Serve(lis)
+	go server.grpcServer.Serve(lis) //nolint:errcheck
 
 	return server, nil
 }

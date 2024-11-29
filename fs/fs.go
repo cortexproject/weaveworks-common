@@ -2,14 +2,13 @@ package fs
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"syscall"
 )
 
 // Interface is the filesystem interface type.
 type Interface interface {
-	ReadDir(string) ([]os.FileInfo, error)
+	ReadDir(string) ([]os.DirEntry, error)
 	ReadDirNames(string) ([]string, error)
 	ReadDirCount(string) (int, error)
 	ReadFile(string) ([]byte, error)
@@ -23,8 +22,8 @@ type realFS struct{}
 // FS is the way you should access the filesystem.
 var fs Interface = realFS{}
 
-func (realFS) ReadDir(path string) ([]os.FileInfo, error) {
-	return ioutil.ReadDir(path)
+func (realFS) ReadDir(path string) ([]os.DirEntry, error) {
+	return os.ReadDir(path)
 }
 
 func (realFS) ReadDirNames(path string) ([]string, error) {
@@ -37,7 +36,7 @@ func (realFS) ReadDirNames(path string) ([]string, error) {
 }
 
 func (realFS) ReadFile(path string) ([]byte, error) {
-	return ioutil.ReadFile(path)
+	return os.ReadFile(path)
 }
 
 func (realFS) Lstat(path string, stat *syscall.Stat_t) error {
@@ -55,7 +54,7 @@ func (realFS) Open(path string) (io.ReadWriteCloser, error) {
 // trampolines here to allow users to do fs.ReadDir etc
 
 // ReadDir see ioutil.ReadDir
-func ReadDir(path string) ([]os.FileInfo, error) {
+func ReadDir(path string) ([]os.DirEntry, error) {
 	return fs.ReadDir(path)
 }
 

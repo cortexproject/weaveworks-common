@@ -12,6 +12,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 // ResetForTesting clears all flag state and sets the usage function as directed.
@@ -76,14 +78,14 @@ func TestEverything(t *testing.T) {
 		}
 	}
 	// Now set all flags
-	Set("test_bool", "true")
-	Set("test_int", "1")
-	Set("test_int64", "1")
-	Set("test_uint", "1")
-	Set("test_uint64", "1")
-	Set("test_string", "1")
-	Set("test_float64", "1")
-	Set("test_duration", "1s")
+	require.NoError(t, Set("test_bool", "true"))
+	require.NoError(t, Set("test_int", "1"))
+	require.NoError(t, Set("test_int64", "1"))
+	require.NoError(t, Set("test_uint", "1"))
+	require.NoError(t, Set("test_uint64", "1"))
+	require.NoError(t, Set("test_string", "1"))
+	require.NoError(t, Set("test_float64", "1"))
+	require.NoError(t, Set("testrequire.NoError(_duration", "1s"))
 	desired = "1"
 	Visit(visitor)
 	if len(m) != 8 {
@@ -95,9 +97,7 @@ func TestEverything(t *testing.T) {
 	// Now test they're visited in sort order.
 	var flagNames []string
 	Visit(func(f *Flag) {
-		for _, name := range f.Names {
-			flagNames = append(flagNames, name)
-		}
+		flagNames = append(flagNames, f.Names...)
 	})
 	if !sort.StringsAreSorted(flagNames) {
 		t.Errorf("flag names not sorted: %v", flagNames)
@@ -276,7 +276,7 @@ func testPanic(f *FlagSet, t *testing.T) {
 	args := []string{
 		"-int", "21",
 	}
-	f.Parse(args)
+	require.NoError(t, f.Parse(args))
 }
 
 func TestParsePanic(t *testing.T) {
@@ -368,7 +368,7 @@ func TestSetOutput(t *testing.T) {
 	var buf bytes.Buffer
 	flags.SetOutput(&buf)
 	flags.Init("test", ContinueOnError)
-	flags.Parse([]string{"-unknown"})
+	require.NoError(t, flags.Parse([]string{"-unknown"}))
 	if out := buf.String(); !strings.Contains(out, "-unknown") {
 		t.Logf("expected output mentioning unknown; got %q", out)
 	}
@@ -520,7 +520,7 @@ func TestMergeFlags(t *testing.T) {
 	base.String([]string{"f"}, "", "")
 
 	fs := NewFlagSet("test", ContinueOnError)
-	Merge(fs, base)
+	require.NoError(t, Merge(fs, base))
 	if len(fs.formal) != 1 {
 		t.Fatalf("FlagCount (%d) != number (1) of elements merged", len(fs.formal))
 	}
