@@ -56,7 +56,7 @@ func TestGrpcStats(t *testing.T) {
 	grpc_health_v1.RegisterHealthServer(serv, health.NewServer())
 
 	closed := false
-	conn, err := grpc.Dial(listener.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(listener.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	defer func() {
 		if !closed {
@@ -149,7 +149,7 @@ func TestGrpcStatsStreaming(t *testing.T) {
 
 	middleware_test.RegisterEchoServerServer(serv, &halfEcho{log: t.Log})
 
-	conn, err := grpc.Dial(listener.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(10e6), grpc.MaxCallSendMsgSize(10e6)))
+	conn, err := grpc.NewClient(listener.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(10e6), grpc.MaxCallSendMsgSize(10e6)))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, conn.Close())

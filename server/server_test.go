@@ -128,7 +128,7 @@ func TestDefaultAddresses(t *testing.T) {
 	go server.Run() //nolint:errcheck
 	defer server.Shutdown()
 
-	conn, err := grpc.Dial("localhost:9095", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient("localhost:9095", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	defer conn.Close() //nolint:errcheck
 
@@ -169,7 +169,7 @@ func TestErrorInstrumentationMiddleware(t *testing.T) {
 
 	go server.Run() //nolint:errcheck
 
-	conn, err := grpc.Dial("localhost:1234", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient("localhost:1234", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	defer conn.Close() //nolint:errcheck
 
@@ -583,7 +583,7 @@ func TestTLSServer(t *testing.T) {
 	expected := []byte("Hello World!")
 	require.Equal(t, expected, body)
 
-	conn, err := grpc.Dial("localhost:9194", grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+	conn, err := grpc.NewClient("localhost:9194", grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	require.NoError(t, err)
 	defer conn.Close() //nolint:errcheck
 
