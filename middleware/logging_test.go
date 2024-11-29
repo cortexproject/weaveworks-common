@@ -38,8 +38,7 @@ func TestBadWriteLogging(t *testing.T) {
 			Log: logging.Logrus(logrusLogger),
 		}
 		handler := func(w http.ResponseWriter, r *http.Request) {
-			_, err := io.WriteString(w, "<html><body>Hello World!</body></html>")
-			require.NoError(t, err)
+			io.WriteString(w, "<html><body>Hello World!</body></html>") //nolint:errcheck
 		}
 		loggingHandler := loggingMiddleware.Wrap(http.HandlerFunc(handler))
 
@@ -129,8 +128,7 @@ func TestLoggingRequestsAtInfoLevel(t *testing.T) {
 			LogRequestAtInfoLevel: true,
 		}
 		handler := func(w http.ResponseWriter, r *http.Request) {
-			_, err := io.WriteString(w, "<html><body>Hello World!</body></html>")
-			require.NoError(t, err)
+			io.WriteString(w, "<html><body>Hello World!</body></html>") //nolint:errcheck
 		}
 		loggingHandler := loggingMiddleware.Wrap(http.HandlerFunc(handler))
 

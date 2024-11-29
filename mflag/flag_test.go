@@ -85,7 +85,7 @@ func TestEverything(t *testing.T) {
 	require.NoError(t, Set("test_uint64", "1"))
 	require.NoError(t, Set("test_string", "1"))
 	require.NoError(t, Set("test_float64", "1"))
-	require.NoError(t, Set("testrequire.NoError(_duration", "1s"))
+	require.NoError(t, Set("test_duration", "1s"))
 	desired = "1"
 	Visit(visitor)
 	if len(m) != 8 {
@@ -276,7 +276,7 @@ func testPanic(f *FlagSet, t *testing.T) {
 	args := []string{
 		"-int", "21",
 	}
-	require.NoError(t, f.Parse(args))
+	f.Parse(args) //nolint:errcheck
 }
 
 func TestParsePanic(t *testing.T) {
@@ -368,7 +368,7 @@ func TestSetOutput(t *testing.T) {
 	var buf bytes.Buffer
 	flags.SetOutput(&buf)
 	flags.Init("test", ContinueOnError)
-	require.NoError(t, flags.Parse([]string{"-unknown"}))
+	flags.Parse([]string{"-unknown"}) //nolint:errcheck
 	if out := buf.String(); !strings.Contains(out, "-unknown") {
 		t.Logf("expected output mentioning unknown; got %q", out)
 	}

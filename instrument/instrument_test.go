@@ -60,7 +60,7 @@ func TestCollectedRequest(t *testing.T) {
 
 func TestCollectedRequest_Error(t *testing.T) {
 	c := &spyCollector{}
-	require.NoError(t, instrument.CollectedRequest(context.Background(), "test", c, nil, func(_ context.Context) error {
+	require.Error(t, instrument.CollectedRequest(context.Background(), "test", c, nil, func(_ context.Context) error {
 		return errors.New("boom")
 	}))
 	assert.True(t, c.before)
