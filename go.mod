@@ -23,6 +23,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/prometheus/client_golang v1.15.1
 	github.com/prometheus/exporter-toolkit v0.8.2
+	github.com/rantav/go-grpc-channelz v0.0.4
+	github.com/sercand/kuberesolver/v5 v5.1.1
 	github.com/sirupsen/logrus v1.6.0
 	github.com/soheilhy/cmux v0.1.5
 	github.com/stretchr/testify v1.8.1
@@ -41,6 +43,7 @@ require (
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
 	github.com/coreos/go-systemd/v22 v22.4.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
+	github.com/go-chi/chi/v5 v5.0.7 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
@@ -53,7 +56,6 @@ require (
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
-	github.com/sercand/kuberesolver/v5 v5.1.1 // indirect
 	go.uber.org/atomic v1.5.1 // indirect
 	golang.org/x/crypto v0.29.0 // indirect
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
