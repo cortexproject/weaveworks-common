@@ -2,18 +2,21 @@ package server
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"flag"
 	"fmt"
 	"math"
 	"net"
 	"net/http"
 	_ "net/http/pprof" // anonymous import to get the pprof handler registered
+	"os"
 	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
 	otgrpc "github.com/opentracing-contrib/go-grpc"
 	"github.com/opentracing/opentracing-go"
+	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/exporter-toolkit/web"
@@ -24,6 +27,7 @@ import (
 	"google.golang.org/grpc"
 	channelzservice "google.golang.org/grpc/channelz/service"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 
 	"github.com/weaveworks/common/httpgrpc"
@@ -42,6 +46,11 @@ const (
 	NetworkTCPV4 = "tcp4"
 )
 
+var (
+	errKeyMissing  = errors.New("certificate given but no key configured")
+	errCertMissing = errors.New("key given but no certificate configured")
+)
+
 // SignalHandler used by Server.
 type SignalHandler interface {
 	// Starts the signals handler. This method is blocking, and returns only after signal is received,
@@ -58,6 +67,62 @@ type TLSConfig struct {
 	TLSKeyPath  string `yaml:"key_file"`
 	ClientAuth  string `yaml:"client_auth_type"`
 	ClientCAs   string `yaml:"client_ca_file"`
+}
+
+// ClientTLSConfig is the TLS config used in the client side.
+type ClientTLSConfig struct {
+	CertPath           string `yaml:"cert_file"`
+	KeyPath            string `yaml:"key_file"`
+	CAPath             string `yaml:"ca_file"`
+	ServerName         string `yaml:"server_name"`
+	InsecureSkipVerify bool   `yaml:"insecure_skip_verify"`
+}
+
+// RegisterFlags registers flags.
+func (cfg *ClientTLSConfig) RegisterFlags(f *flag.FlagSet) {
+	f.StringVar(&cfg.CertPath, "channelz.grpc-client.tls-cert-path", "", "Path to the client certificate file, which will be used for authenticating with the server. Also requires the key path to be configured.")
+	f.StringVar(&cfg.KeyPath, "channelz.grpc-client.tls-key-path", "", "Path to the key file for the client certificate. Also requires the client certificate to be configured.")
+	f.StringVar(&cfg.CAPath, "channelz.grpc-client.tls-ca-path", "", "Path to the CA certificates file to validate server certificate against. If not set, the host's root CA certificates are used.")
+	f.StringVar(&cfg.ServerName, "channelz.grpc-client.tls-server-name", "", "Override the expected name on the server certificate.")
+	f.BoolVar(&cfg.InsecureSkipVerify, "channelz.grpc-client.tls-insecure-skip-verify", false, "Skip validating server certificate.")
+}
+
+// GetTLSConfig initialises tls.Config from config options
+func (cfg *ClientTLSConfig) GetTLSConfig() (*tls.Config, error) {
+	config := &tls.Config{
+		InsecureSkipVerify: cfg.InsecureSkipVerify,
+		ServerName:         cfg.ServerName,
+	}
+
+	// read ca certificates
+	if cfg.CAPath != "" {
+		var caCertPool *x509.CertPool
+		caCert, err := os.ReadFile(cfg.CAPath)
+		if err != nil {
+			return nil, errors.Wrapf(err, "error loading ca cert: %s", cfg.CAPath)
+		}
+		caCertPool = x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM(caCert)
+
+		config.RootCAs = caCertPool
+	}
+
+	// read client certificate
+	if cfg.CertPath != "" || cfg.KeyPath != "" {
+		if cfg.CertPath == "" {
+			return nil, errCertMissing
+		}
+		if cfg.KeyPath == "" {
+			return nil, errKeyMissing
+		}
+		clientCert, err := tls.LoadX509KeyPair(cfg.CertPath, cfg.KeyPath)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to load TLS certificate %s,%s", cfg.CertPath, cfg.KeyPath)
+		}
+		config.Certificates = []tls.Certificate{clientCert}
+	}
+
+	return config, nil
 }
 
 // Config for a Server
@@ -112,7 +177,8 @@ type Config struct {
 	GRPCServerMinTimeBetweenPings      time.Duration `yaml:"grpc_server_min_time_between_pings"`
 	GRPCServerPingWithoutStreamAllowed bool          `yaml:"grpc_server_ping_without_stream_allowed"`
 
-	EnableChannelz bool `yaml:"enable_channelz"`
+	EnableChannelz              bool            `yaml:"enable_channelz"`
+	ChannelzGRPCClientTLSConfig ClientTLSConfig `yaml:"channelz_grpc_client_tls_config"`
 
 	LogFormat                    logging.Format    `yaml:"log_format"`
 	LogLevel                     logging.Level     `yaml:"log_level"`
@@ -173,6 +239,7 @@ func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	f.DurationVar(&cfg.GRPCServerMinTimeBetweenPings, "server.grpc.keepalive.min-time-between-pings", 5*time.Minute, "Minimum amount of time a client should wait before sending a keepalive ping. If client sends keepalive ping more often, server will send GOAWAY and close the connection.")
 	f.BoolVar(&cfg.GRPCServerPingWithoutStreamAllowed, "server.grpc.keepalive.ping-without-stream-allowed", false, "If true, server allows keepalive pings even when there are no active streams(RPCs). If false, and client sends ping when there are no active streams, server will send GOAWAY and close the connection.")
 	f.BoolVar(&cfg.EnableChannelz, "server.enable-channelz", false, "Enable Channelz for gRPC server. A web UI will be also exposed on the HTTP server at /channelz")
+	cfg.ChannelzGRPCClientTLSConfig.RegisterFlags(f)
 	f.StringVar(&cfg.PathPrefix, "server.path-prefix", "", "Base path to serve all API routes from (e.g. /v1/)")
 	cfg.LogFormat.RegisterFlags(f)
 	cfg.LogLevel.RegisterFlags(f)
@@ -407,7 +474,18 @@ func newServer(cfg Config, metrics *Metrics) (*Server, error) {
 	if cfg.EnableChannelz {
 		// Mount channelz handler at /channelz
 		grpcAddr := fmt.Sprintf("%s:%d", cfg.GRPCListenAddress, cfg.GRPCListenPort)
-		router.PathPrefix("/channelz").Handler(channelz.CreateHandler("/", grpcAddr))
+		dialOpts := []grpc.DialOption{}
+		// Server side TLS enabled.
+		if grpcTLSConfig == nil {
+			dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		} else {
+			clientTLSConfig, err := cfg.ChannelzGRPCClientTLSConfig.GetTLSConfig()
+			if err != nil {
+				return nil, fmt.Errorf("error generating channelz grpc client tls config: %v", err)
+			}
+			dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(clientTLSConfig)))
+		}
+		router.PathPrefix("/channelz").Handler(channelz.CreateHandlerWithDialOpts("/", grpcAddr, dialOpts...))
 	}
 
 	var sourceIPs *middleware.SourceIPExtractor
