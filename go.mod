@@ -4,7 +4,6 @@ go 1.24
 
 require (
 	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
-	github.com/davecgh/go-spew v1.1.1
 	github.com/felixge/httpsnoop v1.0.3
 	github.com/go-kit/log v0.2.1
 	github.com/gogo/googleapis v1.1.0
@@ -17,7 +16,6 @@ require (
 	github.com/opentracing-contrib/go-stdlib v0.0.0-20190519235532-cf7a6c988dc9
 	github.com/opentracing/opentracing-go v1.1.0
 	github.com/pkg/errors v0.9.1
-	github.com/pmezard/go-difflib v1.0.0
 	github.com/prometheus/client_golang v1.15.1
 	github.com/prometheus/exporter-toolkit v0.8.2
 	github.com/rantav/go-grpc-channelz v0.0.4
@@ -39,6 +37,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
 	github.com/coreos/go-systemd/v22 v22.4.0 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-chi/chi/v5 v5.0.7 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
@@ -49,6 +48,7 @@ require (
 	github.com/mattn/go-isatty v0.0.4 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
