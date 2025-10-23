@@ -94,3 +94,34 @@ func TestExtractFromGRPCRequest(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkExtractFromGRPCRequest(b *testing.B) {
+	// Create a context with realistic metadata containing multiple headers
+	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs(
+		lowerOrgIDHeaderName, "org-123",
+		"authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+		"user-agent", "grpc-go/1.50.1",
+		"content-type", "application/grpc",
+		"grpc-accept-encoding", "gzip",
+		"grpc-encoding", "gzip",
+		"x-forwarded-for", "192.168.1.100",
+		"x-request-id", "req-12345",
+		"x-trace-id", "trace-67890",
+		"x-span-id", "span-abcdef",
+		"x-custom-header", "custom-value",
+		"x-api-version", "v1.2.3",
+		"x-client-version", "1.0.0",
+		"x-request-timeout", "30s",
+		"x-retry-count", "0",
+	))
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		_, _, err := ExtractFromGRPCRequest(ctx)
+		if err != nil {
+			b.Fatalf("ExtractFromGRPCRequest failed: %v", err)
+		}
+	}
+}
