@@ -46,7 +46,8 @@ func newTestServer(handler http.Handler) (*testServer, error) {
 
 func TestBasic(t *testing.T) {
 	server, err := newTestServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "world")
+		_, err := fmt.Fprint(w, "world")
+		require.NoError(t, err)
 	}))
 	require.NoError(t, err)
 	defer server.grpcServer.GracefulStop()
@@ -115,12 +116,16 @@ func TestTracePropagation(t *testing.T) {
 	jaeger := jaegercfg.Configuration{}
 	closer, err := jaeger.InitGlobalTracer("test")
 	require.NoError(t, err)
-	defer closer.Close()
+	defer func() {
+		err := closer.Close()
+		require.NoError(t, err)
+	}()
 
 	server, err := newTestServer(middleware.Tracer{}.Wrap(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := opentracing.SpanFromContext(r.Context())
-			fmt.Fprint(w, span.BaggageItem("name"))
+			_, err := fmt.Fprint(w, span.BaggageItem("name"))
+			require.NoError(t, err)
 		}),
 	))
 

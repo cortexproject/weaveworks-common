@@ -142,7 +142,7 @@ func updateScheduler(test string, duration float64) {
 	if resp, err := http.DefaultClient.Do(req); err != nil {
 		fmt.Printf("Error updating scheduler: %v\n", err)
 	} else {
-		resp.Body.Close()
+		resp.Body.Close() //nolint:errcheck
 	}
 }
 

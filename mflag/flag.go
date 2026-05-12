@@ -538,7 +538,7 @@ func (fs *FlagSet) PrintDefaults() {
 
 	// Add a blank line between cmd description and list of options
 	if fs.FlagCount() > 0 {
-		fmt.Fprintln(writer, "")
+		fmt.Fprintln(writer, "") //nolint:errcheck
 	}
 
 	fs.VisitAll(func(flag *Flag) {
@@ -553,17 +553,17 @@ func (fs *FlagSet) PrintDefaults() {
 
 			if isZeroValue(val) {
 				format := "  -%s"
-				fmt.Fprintf(writer, format, strings.Join(names, ", -"))
+				fmt.Fprintf(writer, format, strings.Join(names, ", -")) //nolint:errcheck
 			} else {
 				format := "  -%s=%s"
-				fmt.Fprintf(writer, format, strings.Join(names, ", -"), val)
+				fmt.Fprintf(writer, format, strings.Join(names, ", -"), val) //nolint:errcheck
 			}
 			for _, line := range strings.Split(flag.Usage, "\n") {
-				fmt.Fprintln(writer, "\t", line)
+				fmt.Fprintln(writer, "\t", line) //nolint:errcheck
 			}
 		}
 	})
-	writer.Flush()
+	writer.Flush() //nolint:errcheck
 }
 
 // PrintDefaults prints to standard error the default values of all defined command-line flags.
@@ -574,9 +574,9 @@ func PrintDefaults() {
 // defaultUsage is the default function to print a usage message.
 func defaultUsage(fs *FlagSet) {
 	if fs.name == "" {
-		fmt.Fprintf(fs.Out(), "Usage:\n")
+		fmt.Fprintf(fs.Out(), "Usage:\n") //nolint:errcheck
 	} else {
-		fmt.Fprintf(fs.Out(), "Usage of %s:\n", fs.name)
+		fmt.Fprintf(fs.Out(), "Usage of %s:\n", fs.name) //nolint:errcheck
 	}
 	fs.PrintDefaults()
 }
@@ -588,14 +588,14 @@ func defaultUsage(fs *FlagSet) {
 // Usage prints to standard error a usage message documenting all defined command-line flags.
 // The function is a variable that may be changed to point to a custom function.
 var Usage = func() {
-	fmt.Fprintf(CommandLine.Out(), "Usage of %s:\n", os.Args[0])
+	fmt.Fprintf(CommandLine.Out(), "Usage of %s:\n", os.Args[0]) //nolint:errcheck
 	PrintDefaults()
 }
 
 // ShortUsage prints to standard error a usage message documenting the standard command layout
 // The function is a variable that may be changed to point to a custom function.
 var ShortUsage = func() {
-	fmt.Fprintf(CommandLine.output, "Usage of %s:\n", os.Args[0])
+	fmt.Fprintf(CommandLine.output, "Usage of %s:\n", os.Args[0]) //nolint:errcheck
 }
 
 // FlagCount returns the number of flags that have been defined.
@@ -901,8 +901,8 @@ func (fs *FlagSet) Var(value Value, names []string, usage string) {
 			} else {
 				msg = fmt.Sprintf("%s flag redefined: %s", fs.name, name)
 			}
-			fmt.Fprintln(fs.Out(), msg)
-			panic(msg) // Happens only if flags are declared with identical names
+			fmt.Fprintln(fs.Out(), msg) //nolint:errcheck
+			panic(msg)                  // Happens only if flags are declared with identical names
 		}
 		if fs.formal == nil {
 			fs.formal = make(map[string]*Flag)
@@ -925,11 +925,11 @@ func Var(value Value, names []string, usage string) {
 // returns the error.
 func (fs *FlagSet) failf(format string, a ...interface{}) error {
 	err := fmt.Errorf(format, a...)
-	fmt.Fprintln(fs.Out(), err)
+	fmt.Fprintln(fs.Out(), err) //nolint:errcheck
 	if os.Args[0] == fs.name {
-		fmt.Fprintf(fs.Out(), "See '%s --help'.\n", os.Args[0])
+		fmt.Fprintf(fs.Out(), "See '%s --help'.\n", os.Args[0]) //nolint:errcheck
 	} else {
-		fmt.Fprintf(fs.Out(), "See '%s %s --help'.\n", os.Args[0], fs.name)
+		fmt.Fprintf(fs.Out(), "See '%s %s --help'.\n", os.Args[0], fs.name) //nolint:errcheck
 	}
 	return err
 }
@@ -1058,9 +1058,9 @@ func (fs *FlagSet) parseOne() (bool, string, error) {
 				}
 			}
 			if replacement != "" {
-				fmt.Fprintf(fs.Out(), "Warning: '-%s' is deprecated, it will be replaced by '-%s' soon. See usage.\n", name, replacement)
+				fmt.Fprintf(fs.Out(), "Warning: '-%s' is deprecated, it will be replaced by '-%s' soon. See usage.\n", name, replacement) //nolint:errcheck
 			} else {
-				fmt.Fprintf(fs.Out(), "Warning: '-%s' is deprecated, it will be removed soon. See usage.\n", name)
+				fmt.Fprintf(fs.Out(), "Warning: '-%s' is deprecated, it will be removed soon. See usage.\n", name) //nolint:errcheck
 			}
 		}
 	}
@@ -1152,7 +1152,7 @@ func (fs *FlagSet) ReportError(str string, withHelp bool) {
 			str += ".\nSee '" + os.Args[0] + " " + fs.Name() + " --help'"
 		}
 	}
-	fmt.Fprintf(fs.Out(), "%s: %s.\n", os.Args[0], str)
+	fmt.Fprintf(fs.Out(), "%s: %s.\n", os.Args[0], str) //nolint:errcheck
 }
 
 // Parsed reports whether fs.Parse has been called.
@@ -1241,7 +1241,7 @@ func Merge(dest *FlagSet, flagsets ...*FlagSet) error {
 				} else {
 					err = fmt.Errorf("%s flag redefined: %s", fset.name, k)
 				}
-				fmt.Fprintln(fset.Out(), err.Error())
+				fmt.Fprintln(fset.Out(), err.Error()) //nolint:errcheck
 				// Happens only if flags are declared with identical names
 				switch dest.errorHandling {
 				case ContinueOnError:
